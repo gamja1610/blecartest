@@ -519,13 +519,29 @@
       if (navigator.vibrate) navigator.vibrate(25);
     }
 
-    // 5단계 기어 버튼 이벤트 바인딩
-    gearBtns.forEach(btn => {
-      btn.addEventListener('pointerdown', e => {
-        e.preventDefault();
-        e.stopPropagation();
-        setGear(btn.dataset.gear);
-      });
+    // 기어 스틱: 탭 또는 손으로 끌어서 가장 가까운 단으로 이동
+    const shifter = document.getElementById('gear-selector');
+    function gearAt(e) {
+      const rc = shifter.getBoundingClientRect();
+      const x = (e.clientX - rc.left) * 210 / rc.width, y = (e.clientY - rc.top) * 132 / rc.height;
+      let best = 1, bd = Infinity;
+      for (const g in GEAR_POS) {
+        const d = (GEAR_POS[g][0] - x) ** 2 + (GEAR_POS[g][1] - y) ** 2;
+        if (d < bd) { bd = d; best = +g; }
+      }
+      return best;
+    }
+    shifter.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      shifter.setPointerCapture(e.pointerId);
+      const g = gearAt(e);
+      if (g !== currentGear) setGear(g);
+    });
+    shifter.addEventListener('pointermove', e => {
+      if (!shifter.hasPointerCapture(e.pointerId)) return;
+      const g = gearAt(e);
+      if (g !== currentGear) setGear(g);
     });
 
     // 엔진 시동 버튼 토글 이벤트
