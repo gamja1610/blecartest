@@ -138,11 +138,6 @@
     width: 58px; height: 30px; flex-shrink: 0; text-align: center; font: 700 14px 'JetBrains Mono', monospace;
     letter-spacing: 2px; border: 2px solid var(--black); border-radius: 8px; padding: 0 4px; user-select: text; -webkit-user-select: text;
   }
-  .btn-all {
-    height: 30px; flex-shrink: 0; padding: 0 8px; font-size: 11px; font-weight: bold; font-family: var(--font-giant);
-    background: #fff; color: var(--gray); border: 1.5px solid var(--line); border-radius: 8px; cursor: pointer;
-  }
-  .btn-all.on { color: var(--red); border-color: var(--red); }
   .pw-input.bad { border-color: var(--red); animation: pwShake .3s; }
   @keyframes pwShake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 
@@ -392,7 +387,6 @@
           <div class="hud-conn">
             <input class="pw-input" id="pw-input" type="tel" inputmode="numeric" maxlength="4" placeholder="비번" autocomplete="off">
             <button class="btn-connect" id="btn-connect">차량 연결</button>
-            <button class="btn-all" id="btn-all" title="목록에 차가 안 뜰 때 켜기">전체</button>
           </div>
           <span class="status-badge" id="status-badge" style="flex-basis:100%; justify-content:center;">연결 안 됨</span>
         </div>
@@ -477,10 +471,7 @@
     // ★ 보안: 아두이노가 비번을 확인해야(AUTH OK) 조종 명령을 보냄
     let authed = false, carPw = '', rxBuf = '', authTimer = null;
     const pwInput = document.getElementById('pw-input');
-    // 검색 목록: 기본은 우리 모듈만, '전체'를 켜면 주변 기기 전부
-    let showAll = false;
-    const btnAll = document.getElementById('btn-all');
-    btnAll.addEventListener('click', () => { showAll = !showAll; btnAll.classList.toggle('on', showAll); });
+
     let isGas = false, isBrake = false;
     let currentSteer = 'CENTER';
     let isEngineOn = true;
@@ -736,11 +727,8 @@
       }
       try {
         statusBadge.textContent = '장치 검색 중...';
-        // 기본: 우리 모듈만 표시 / '모든 기기 보기'를 켜면 주변 기기 전부 표시
-        const opts = showAll
-          ? { acceptAllDevices: true, optionalServices: [SERVICE_UUID] }
-          : { filters: [{ namePrefix: 'speedstar' }, { namePrefix: 'ledtest' }, { namePrefix: 'CAR' }, { namePrefix: 'BT05' }, { services: [SERVICE_UUID] }], optionalServices: [SERVICE_UUID] };
-        device = await navigator.bluetooth.requestDevice(opts);
+        // 이 모듈(BT05 호환)은 광고에 이름·서비스를 싣지 않아 필터로 거르면 안 잡힘 → 전체 표시
+        device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: [SERVICE_UUID] });
 
         statusBadge.textContent = '연결 시도 중...';
         const server = await device.gatt.connect();
