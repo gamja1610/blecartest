@@ -2,8 +2,8 @@
 SoftwareSerial bt(2, 3); // 블루투스: D2(RX) <- TXD, D3(TX) -> RXD
 
 // ★ [우리 조 고유 설정] - 조마다 다르게!
-const char BT_NAME[]  = "speedstarX"; // 블루투스 이름 (조마다 다르게)
-const char PASSWORD[] = "1234";    // ★ 웹앱에 입력할 비밀번호 (숫자 4자리)
+const char BT_NAME[]  = "speedstarX";  // 블루투스 이름 (CAR01 ~ CAR07)
+const char PASSWORD[] = "1234";   // ★ 웹앱에 입력할 비밀번호 (숫자 4자리)
 
 const int A_IA = 5, A_IB = 7;   // 왼쪽 모터 (IA:PWM 속도, IB:방향)
 const int B_IA = 6, B_IB = 8;   // 오른쪽 모터 (IA:PWM 속도, IB:방향)
@@ -13,7 +13,7 @@ const int STOP_DIST = 15;       // 장애물 정지 거리 (15cm)
 const unsigned long FAILSAFE_MS = 600;   // 0.6초 통신 안전장치
 const unsigned long AUTH_MS = 30000;     // 30초 동안 명령 없으면 다시 잠금
 
-int speed = 223;                // 기본 4단 속도 (130~255)
+int speed = 223;                // 기본 1단 속도 (223~255)
 char cmd = 'S';                 // 현재 주행 상태 ('S':정지)
 unsigned long lastCmd = 0;      // 마지막 수신 시각
 
@@ -38,54 +38,48 @@ void setup() {
 }
 
 void loop() {
-  while (bt.available()) {
-    char c = bt.read();
+  readBluetooth(); // ★ 비밀번호 검사 + 조종 명령 받기 (3/4)
 
-    // 비밀번호 받기: P로 시작해서 줄바꿈으로 끝남
-    if (c == 'P' && !readingPw) { readingPw = true; pw = ""; continue; }
-    if (readingPw) {
-      if (c == '\n' || c == '\r') {
-        readingPw = false;
-        authed = (pw == PASSWORD);
-        lastCmd = millis();
-        cmd = 'S';
-        bt.print(authed ? "AUTH OK\n" : "AUTH FAIL\n");
-        Serial.println(authed ? "비밀번호 통과" : "비밀번호 틀림");
-      } else if (pw.length() < 16) pw += c;
-      continue;
-    }
-
-    bool isGear = (c >= '1' && c <= '5');
-    bool isDir = (c != 0 && strchr("FBLRGIHJS", c));
-    if (!isGear && !isDir) continue;  // 그 밖의 글자는 무시
-
-    // 인증 전에는 어떤 명령도 받지 않음
-    if (!authed) {
-      if (millis() - lastLocked > 1000) { bt.print("LOCKED\n"); lastLocked = millis(); }
-      continue;
-    }
-
-    lastCmd = millis();
-    Serial.print(c);
-    if (isGear) {
-      speed = map(c - '0', 1, 5, 130, 255); // 1~5단 기어
-      bt.print("GEAR "); bt.print(c); bt.print("\n");
-    } else cmd = c;                          // 방향 명령
-  }
-
-  // 자동 잠금: 모듈이 연결 끊김을 알려주지 않으므로 시간으로 잠금
-  if (authed && millis() - lastCmd > AUTH_MS) { authed = false; Serial.println("\n시간 초과 -> 잠금"); }
+  // ★ 자동 잠금: 모듈이 연결 끊김을 알려주지 않으므로 시간으로 잠금
+  if (authed && millis() - lastCmd > AUTH_MS) authed = false;
 
   // 안전장치: 인증 안 됐거나 0.6초간 신호 끊기면 자동 정지
   if (!authed || (FAILSAFE_MS > 0 && millis() - lastCmd > FAILSAFE_MS)) cmd = 'S';
 
   // 초음파 장애물 감지: 15cm 이내 접근 시 직진 정지
   bool fw = (cmd == 'F' || cmd == 'G' || cmd == 'I');
-  if (USE_ULTRASONIC && fw && readDistance() < STOP_DIST) {
-    drive(0, 0);
-    return;
-  }
+  if (USE_ULTRASONIC && fw && readDistance() < STOP_DIST) { drive(0, 0); return; }
   applyManual(cmd);
+}
+
+// ★ 블루투스로 받은 글자 처리: 비밀번호 검사 → 조종 명령
+void readBluetooth() {
+  while (bt.available()) {
+    char c = bt.read();
+    // 비밀번호 받기: P로 시작해서 줄바꿈으로 끝남 (예: P1234)
+    if (c == 'P' && !readingPw) { readingPw = true; pw = ""; continue; }
+    if (readingPw) {
+      if (c == '\n' || c == '\r') {
+        readingPw = false;
+        authed = (pw == PASSWORD);   // ★ 비밀번호 비교
+        lastCmd = millis(); cmd = 'S';
+        bt.print(authed ? "AUTH OK\n" : "AUTH FAIL\n");
+      } else if (pw.length() < 16) pw += c;
+      continue;
+    }
+    bool isGear = (c >= '1' && c <= '5');
+    bool isDir = (c != 0 && strchr("FBLRGIHJS", c));
+    if (!isGear && !isDir) continue;  // 그 밖의 글자는 무시
+    if (!authed) {                    // ★ 인증 전에는 어떤 명령도 안 받음
+      if (millis() - lastLocked > 1000) { bt.print("LOCKED\n"); lastLocked = millis(); }
+      continue;
+    }
+    lastCmd = millis(); Serial.print(c);
+    if (isGear) {
+      speed = map(c - '0', 1, 5, 223, 255); // 1~5단 기어
+      bt.print("GEAR "); bt.print(c); bt.print("\n");
+    } else cmd = c;                          // 방향 명령
+  }
 }
 
 // 방향 명령에 따라 바퀴 제어
@@ -104,21 +98,21 @@ void applyManual(char c) {
   }
 }
 
-// L9110S 모터 1개 제어: v는 -255(역회전) ~ 255(정회전)
+// L9110S 모터 1개: v = -255(역) ~ 255(정)
 void motor(int ia, int ib, int v) {
-  v = constrain(v, -255, 255);  // 범위 밖 값 방지
+  v = constrain(v, -255, 255); // 범위 밖 값 방지
   if (v >= 0) {
-    digitalWrite(ib, LOW);      // 전진 방향
-    analogWrite(ia, v);         // PWM 속도 출력
+    digitalWrite(ib, LOW);     // 전진 방향
+    analogWrite(ia, v);        // PWM 속도
   } else {
-    digitalWrite(ib, HIGH);     // 후진 방향
-    analogWrite(ia, 255 + v);   // L9110S 역방향 PWM
+    digitalWrite(ib, HIGH);    // 후진 방향
+    analogWrite(ia, 255 + v);  // 역방향 PWM
   }
 }
 
 void drive(int left, int right) {
-  motor(A_IA, A_IB, left);      // 왼쪽 바퀴 구동
-  motor(B_IA, B_IB, right);     // 오른쪽 바퀴 구동
+  motor(A_IA, A_IB, left);     // 왼쪽 바퀴
+  motor(B_IA, B_IB, right);    // 오른쪽 바퀴
 }
 
 // 초음파 센서 거리 측정 (cm)

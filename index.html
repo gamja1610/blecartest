@@ -162,49 +162,32 @@
   }
   .gear-label { font-size: 11px; font-weight: bold; color: var(--gray); letter-spacing: 0.5px; margin-top: 2px; }
   
-  /* 5단 기어 선택 버튼 바 */
-  .gear-selector-wrap {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 10px;
-    background: var(--soft);
-    padding: 4px;
-    border-radius: 8px;
-    border: 1px solid var(--line);
-    width: 100%;
-    max-width: 250px;
-    box-sizing: border-box;
+  /* 5단 기어 스틱 (실제 H 패턴 게이트) */
+  .gear-row { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; }
+  .shifter {
+    position: relative; width: 210px; height: 132px; flex-shrink: 0;
+    background: linear-gradient(#2B2F36, #1A1D22); border-radius: 14px;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,.6), 0 2px 4px rgba(0,0,0,.15);
+    touch-action: none;
   }
+  .shifter svg.gate { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   .gear-btn {
-    flex: 1;
-    height: 32px;
-    border: 1px solid transparent;
-    background: #FFFFFF;
-    border-radius: 6px;
-    font-family: 'JetBrains Mono', var(--font-giant);
-    font-size: 13px;
-    font-weight: 800;
-    color: #555555;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.12s;
+    position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border: none; background: transparent;
+    border-radius: 50%; cursor: pointer; padding: 0; z-index: 3;
+    font-family: 'JetBrains Mono', var(--font-giant); font-size: 13px; font-weight: 800; color: #9AA3AE;
   }
-  .gear-btn:hover {
-    background: #EAEAEA;
-    color: #000;
-  }
-  .gear-btn.active {
-    background: var(--black);
-    color: #FFFFFF;
-    border-color: var(--black);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  }
-  .gear-btn.active.gear-max {
-    background: var(--red);
-    border-color: var(--red);
+  .gear-btn span { position: absolute; left: 50%; transform: translateX(-50%); }
+  .gear-btn.top span { top: -12px; }
+  .gear-btn.bot span { bottom: -12px; }
+  .gear-btn.active span { color: #FFFFFF; }
+  .gear-btn.active.gear-max span { color: var(--red); }
+  .knob {
+    position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; z-index: 2; pointer-events: none;
+    background: radial-gradient(circle at 35% 30%, #6B6F76 0%, #22252A 45%, #050607 100%);
+    border: 3px solid var(--red); box-shadow: 0 4px 8px rgba(0,0,0,.55);
+    transition: left .16s ease-out, top .16s ease-out;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 800; color: #FFF;
   }
 
   .btn-stop {
@@ -391,21 +374,28 @@
           <span class="status-badge" id="status-badge" style="flex-basis:100%; justify-content:center;">연결 안 됨</span>
         </div>
 
-        <!-- 5단계 기어 게이지 & 원터치 기어 셀렉터 -->
+        <!-- 5단 기어 스틱 (H 패턴: 위 1·3·5 / 아래 2·4) -->
         <div class="gear-gauge">
-          <div class="gear-display-row">
-            <span class="gear-val" id="hud-gear">4</span>
-            <span class="gear-unit">단</span>
+          <div class="gear-row">
+            <div class="gear-display-row" style="flex-direction:column; align-items:center; gap:0;">
+              <span class="gear-val" id="hud-gear">1</span>
+              <span class="gear-unit">단</span>
+            </div>
+            <div class="shifter" id="gear-selector">
+              <svg class="gate" viewBox="0 0 210 132">
+                <path d="M40 32V100M105 32V100M170 32V66M40 66H170" stroke="#0B0C0E" stroke-width="18" stroke-linecap="round" fill="none"/>
+                                <circle cx="105" cy="66" r="15" fill="#15171B" stroke="#3A3F47" stroke-width="2"/>
+                <line id="gear-shaft" x1="105" y1="66" x2="40" y2="32" stroke="#7A808A" stroke-width="7" stroke-linecap="round"/>
+              </svg>
+              <div class="knob" id="gear-knob" style="left:40px; top:32px;">1</div>
+              <button type="button" class="gear-btn top active" data-gear="1" style="left:40px; top:32px;"><span>1</span></button>
+              <button type="button" class="gear-btn bot" data-gear="2" style="left:40px; top:100px;"><span>2</span></button>
+              <button type="button" class="gear-btn top" data-gear="3" style="left:105px; top:32px;"><span>3</span></button>
+              <button type="button" class="gear-btn bot" data-gear="4" style="left:105px; top:100px;"><span>4</span></button>
+              <button type="button" class="gear-btn top" data-gear="5" style="left:170px; top:32px;"><span>5</span></button>
+            </div>
           </div>
-          <div class="gear-label">기어 단계 (GEAR LEVEL 1~5)</div>
-          
-          <div class="gear-selector-wrap" id="gear-selector">
-            <button type="button" class="gear-btn" data-gear="1">1단</button>
-            <button type="button" class="gear-btn" data-gear="2">2단</button>
-            <button type="button" class="gear-btn" data-gear="3">3단</button>
-            <button type="button" class="gear-btn active" data-gear="4">4단</button>
-            <button type="button" class="gear-btn" data-gear="5">5단</button>
-          </div>
+          <div class="gear-label">기어 스틱 (GEAR 1~5 · 숫자 클수록 빠름)</div>
         </div>
 
         <button class="btn-stop" id="btn-stop">🛑 비상 정지 (STOP)</button>
@@ -475,7 +465,7 @@
     let isGas = false, isBrake = false;
     let currentSteer = 'CENTER';
     let isEngineOn = true;
-    let currentGear = 4; // 기본값: 4단
+    let currentGear = 1; // 기본값: 1단 (PWM 223)
 
     const wheel = document.getElementById('steering-wheel');
     const statusBadge = document.getElementById('status-badge');
@@ -491,10 +481,24 @@
     const engTitle = document.getElementById('eng-title');
     const engBadge = document.getElementById('eng-badge');
 
+    // 기어 스틱 위치 (H 패턴 게이트 좌표)
+    const GEAR_POS = { 1: [40, 32], 2: [40, 100], 3: [105, 32], 4: [105, 100], 5: [170, 32] };
+    const gearKnob = document.getElementById('gear-knob');
+    const gearShaft = document.getElementById('gear-shaft');
+    function moveStick(g) {
+      const [x, y] = GEAR_POS[g];
+      gearKnob.style.left = x + 'px';
+      gearKnob.style.top = y + 'px';
+      gearKnob.textContent = g;
+      gearShaft.setAttribute('x2', x);
+      gearShaft.setAttribute('y2', y);
+    }
+
     // 기어 변경 함수 (1 ~ 5단)
     function setGear(g) {
-      currentGear = Math.max(1, Math.min(5, parseInt(g, 10) || 4));
+      currentGear = Math.max(1, Math.min(5, parseInt(g, 10) || 1));
       hudGear.textContent = currentGear;
+      moveStick(currentGear);
       
       gearBtns.forEach(btn => {
         const val = parseInt(btn.dataset.gear, 10);
@@ -541,7 +545,7 @@
         engTitle.textContent = 'ENGINE STOP';
         engBadge.textContent = '시동 OFF';
         if (navigator.vibrate) navigator.vibrate(60);
-        // 시동 OFF 시 차량 즉시 정지 신호만 전송, 기어값은 4단(현재값) 그대로 안전하게 유지!
+        // 시동 OFF 시 차량 즉시 정지 신호만 전송, 기어값은 현재값 그대로 안전하게 유지!
         sendCommand('S');
       }
       hudGear.textContent = currentGear; // 기어 표시 절대 오염 방지
