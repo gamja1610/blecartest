@@ -57,7 +57,7 @@
     height: 370px;
     flex-shrink: 0;
     display: grid;
-    grid-template-columns: 230px 1fr 240px;
+    grid-template-columns: 230px minmax(0, 1fr) 240px;
     gap: 16px;
     padding: 12px 18px;
     box-sizing: border-box;
@@ -109,7 +109,11 @@
     white-space: nowrap;
     gap: 8px;
     box-sizing: border-box;
+    flex-wrap: wrap;          /* 좁으면 연결 칸을 둘째 줄로 */
+    justify-content: center;
+    row-gap: 6px;
   }
+  .hud-conn { display: flex; align-items: center; justify-content: center; gap: 8px; }
   .brand-logo {
     display: flex; align-items: center; gap: 4px; font-size: 14px; font-weight: bold; flex-shrink: 0;
   }
@@ -385,12 +389,12 @@
             <span>하이스쿨</span>
             <span class="red">아두이노</span>
           </div>
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span class="status-badge" id="status-badge">연결 안 됨</span>
+          <div class="hud-conn">
             <input class="pw-input" id="pw-input" type="tel" inputmode="numeric" maxlength="4" placeholder="비번" autocomplete="off">
             <button class="btn-connect" id="btn-connect">차량 연결</button>
             <button class="btn-all" id="btn-all" title="목록에 차가 안 뜰 때 켜기">전체</button>
           </div>
+          <span class="status-badge" id="status-badge" style="flex-basis:100%; justify-content:center;">연결 안 됨</span>
         </div>
 
         <!-- 5단계 기어 게이지 & 원터치 기어 셀렉터 -->
