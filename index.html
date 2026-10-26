@@ -570,9 +570,7 @@
         if (currentSteer === 'RIGHT') return 'J'; // 후진 우회전
         return 'B';                             // 후진
       }
-      if (currentSteer === 'LEFT') return 'L';   // 제자리 좌회전
-      if (currentSteer === 'RIGHT') return 'R';  // 제자리 우회전
-      return 'S';                               // 정지
+      return 'S';                               // 페달 없으면 정지 (핸들은 방향만 정함)
     }
 
     async function sendCommand(cmd) {
