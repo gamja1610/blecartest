@@ -454,6 +454,10 @@
     setTimeout(autoFit, 50);
 
     const SERVICE_UUID = 0xffe0;
+    // 검색 목록에 띄울 기기: 우리 차 이름 + HM-10/BT05 계열 모듈
+    const CAR_FILTERS = ['CAR', 'speedstar', 'ledtest', 'BT05', 'MLT-BT05', 'HMSoft', 'HM-10', 'JDY'].map(p => ({ namePrefix: p }))
+      .concat([{ services: [SERVICE_UUID] }]);
+    let showAll = false;
     const CHAR_UUID = 0xffe1;
     const RESEND_MS = 150;
 
@@ -731,8 +735,13 @@
       }
       try {
         statusBadge.textContent = '장치 검색 중...';
-        // 이 모듈(BT05 호환)은 광고에 이름·서비스를 싣지 않아 필터로 거르면 안 잡힘 → 전체 표시
-        device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: [SERVICE_UUID] });
+        // 기본: 우리 차 이름(CAR·speedstar 등)·BLE 모듈만 표시 → 알 수 없는 기기 숨김
+        // 목록에 없어서 취소하면 다음 번 누를 때 전체 기기 표시
+        const opts = showAll
+          ? { acceptAllDevices: true, optionalServices: [SERVICE_UUID] }
+          : { filters: CAR_FILTERS, optionalServices: [SERVICE_UUID] };
+        device = await navigator.bluetooth.requestDevice(opts);
+        showAll = false;
 
         statusBadge.textContent = '연결 시도 중...';
         const server = await device.gatt.connect();
@@ -755,10 +764,17 @@
 
         setTimeout(sendAuth, 300);
       } catch (e) {
-        statusBadge.textContent = '연결 실패';
         statusBadge.classList.remove('on');
-        btnConnect.textContent = '차량 연결';
         btnConnect.classList.remove('on');
+        if (e.name === 'NotFoundError' && !showAll) {
+          showAll = true;
+          statusBadge.textContent = '목록에 없으면 다시 눌러 전체 보기';
+          btnConnect.textContent = '전체 보기';
+        } else {
+          showAll = false;
+          statusBadge.textContent = '연결 실패';
+          btnConnect.textContent = '차량 연결';
+        }
       }
     });
   </script>
